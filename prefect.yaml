@@ -41,7 +41,7 @@ deployments:
     - cams
   description: "Hourly CAMS NCP data download pipeline"
   concurrency_limit: null
-  entrypoint: entrypoint.py:main
+  entrypoint: cams_ncp_pipeline.py:main
   parameters: {}
   work_pool:
     name: test-docker-process-worker
