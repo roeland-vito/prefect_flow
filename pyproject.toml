@@ -1,0 +1,11 @@
+
+[project]
+name = "test_flow"
+version = "0.0.0"
+requires-python = ">=3.10,<4.0"
+
+dependencies = [
+    "prefect",
+    "sasair",
+	"cams-ncp-client"
+]
