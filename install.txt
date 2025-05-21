@@ -1,0 +1,13 @@
+cd C:\DEV\Projects\_MAP\CAMS_NCP\cams-ncp_flow_process
+
+(
+uv venv
+
+source .venv/bin/activate
+or
+.venv\Scripts\activate
+
+uv pip install prefect 
+)
+
+prefect deploy

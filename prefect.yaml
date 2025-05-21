@@ -1,0 +1,51 @@
+name: cams-ncp-pipeline
+prefect-version: 3.4.0
+
+# No build steps needed (environment setup is handled in the command)
+build: null
+
+pull:
+  - prefect.deployments.steps.git_clone:
+      id: clone-repo
+      repository: https://github.com/roeland-vito/prefect_flow.git
+      branch: main
+      
+  - prefect.deployments.steps.run_shell_script:
+      id: ls
+      directory: "{{ clone-step.directory }}"
+      script: ls -lisat
+      stream_output: true
+     
+  - prefect.deployments.steps.pip_install_requirements:
+      id: req
+      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
+      requirements_file: ./prefect_flow-main/requirements.txt
+      stream_output: true
+
+#  - prefect.deployments.steps.run_shell_script:
+#      id: ls
+#      directory: "{{ clone-step.directory }}"
+#      script: ls -lisat
+#      stream_output: true
+      
+#  - prefect.deployments.steps.run_shell_script:
+#      id: setup-venv
+#      directory: "{{ clone-step.directory }}"
+#      script: sh ./prefect_flow-main/init.sh
+#      stream_output: true
+        
+deployments:
+- name: cams-ncp-hourly
+  version: null
+  tags:
+    - cams
+  description: "Hourly CAMS NCP data download pipeline"
+  concurrency_limit: null
+  entrypoint: entrypoint.py:main
+  parameters: {}
+  work_pool:
+    name: test-docker-process-worker
+    
+  schedule:
+    cron: "0 * * * *"  # Run hourly at minute 0
+    timezone: UTC
