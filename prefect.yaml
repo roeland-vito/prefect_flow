@@ -11,38 +11,19 @@ pull:
       #repository: https://git.vito.be/scm/tes/cams-ncp_flow_process.git
       branch: main
 
-  - prefect.deployments.steps.run_shell_script:
-      id: ls
-      directory: "{{ clone-step.directory }}"
-      script: ls -lisat
-      stream_output: true
-      
-  - vito.sas_prefect.uv_install:
-      id: uv-install-step
-      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
-      venv_name: myvenv # see process agent
-      sub_directory: prefect_flow-main
-      stream_output: true
-      
-#  - prefect.deployments.steps.pip_install_requirements:
-#      id: req
-#      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
-      #requirements_file: ./prefect_flow-main/requirements.txt
-#      requirements_file: ./cams-ncp_flow_process-main/requirements.txt
-#      stream_output: true
-
 #  - prefect.deployments.steps.run_shell_script:
 #      id: ls
 #      directory: "{{ clone-step.directory }}"
 #      script: ls -lisat
 #      stream_output: true
       
-#  - prefect.deployments.steps.run_shell_script:
-#      id: setup-venv
-#      directory: "{{ clone-step.directory }}"
-#      script: sh ./prefect_flow-main/init.sh
-#      stream_output: true
-        
+  - vito.sas_prefect.uv_install:
+      id: uv-install-step
+      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
+      min_python_version: "3.10"
+      sub_directory: prefect_flow-main
+      stream_output: true
+              
 deployments:
 - name: cams-ncp-hourly
   version: null
@@ -51,17 +32,12 @@ deployments:
   description: "Hourly CAMS NCP data download pipeline"
   concurrency_limit: null
   entrypoint: cams_ncp_pipeline.py:main
-  #entrypoint: "uv run python cams_ncp_pipeline.py"
   parameters: {}
   work_pool:
     name: test-docker-process-worker
     job_variables:
-      # Explicitly set the Python executable path
+      # Explicitly use uv
       command: "uv run python -m prefect.engine"
-      # Inherit environment variables from uv_install step
-      #env: 
-      #  VIRTUAL_ENV: "{{ uv-install-step.virtual_env }}"
-      #  PATH: "{{ uv-install-step.path }}"
   schedule:
     cron: "0 * * * *"  # Run hourly at minute 0
     timezone: UTC
