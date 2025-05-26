@@ -7,10 +7,9 @@ build: null
 pull:
   - prefect.deployments.steps.git_clone:
       id: clone-repo
-      #repository: https://github.com/roeland-vito/prefect_flow.git
-      repository: https://git.vito.be/scm/tes/cams-ncp_flow_process.git
+      repository: https://github.com/roeland-vito/prefect_flow.git
+      #repository: https://git.vito.be/scm/tes/cams-ncp_flow_process.git
       branch: main
-
 
   - prefect.deployments.steps.run_shell_script:
       id: ls
@@ -20,16 +19,15 @@ pull:
       
   - vito.sas_prefect.uv_install:
       directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
+      sub_directory: prefect_flow-main
       stream_output: true
       
-     
-  - prefect.deployments.steps.pip_install_requirements:
-      id: req
-      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
+#  - prefect.deployments.steps.pip_install_requirements:
+#      id: req
+#      directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
       #requirements_file: ./prefect_flow-main/requirements.txt
-      requirements_file: ./cams-ncp_flow_process-main/requirements.txt
-      
-      stream_output: true
+#      requirements_file: ./cams-ncp_flow_process-main/requirements.txt
+#      stream_output: true
 
 #  - prefect.deployments.steps.run_shell_script:
 #      id: ls

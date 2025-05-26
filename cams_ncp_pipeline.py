@@ -77,6 +77,10 @@ def download_cams(model_names: List[str]) -> None:
 
 @flow(log_prints=True)
 def main() -> None:
+
+    # print current Python executable
+    print(f"Python executable: {sys.executable}")
+
     download_cams([
         "ensemble", "chimere", "emep"
     ])
