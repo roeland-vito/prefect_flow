@@ -93,7 +93,7 @@ def main() -> None:
     print("Python sys.path:")
     for path in sys.path:
         print(path)
-
+    print("Flow done :)")
     # download_cams([
     #     "ensemble", "chimere", "emep"
     # ])

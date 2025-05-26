@@ -18,6 +18,7 @@ pull:
       stream_output: true
       
   - vito.sas_prefect.uv_install:
+      id: uv-step
       directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
       sub_directory: prefect_flow-main
       stream_output: true
@@ -49,11 +50,15 @@ deployments:
   description: "Hourly CAMS NCP data download pipeline"
   concurrency_limit: null
   entrypoint: cams_ncp_pipeline.py:main
+  #entrypoint: "uv run python cams_ncp_pipeline.py"
   parameters: {}
   work_pool:
     name: test-docker-process-worker
-  job_variables:
-    env: "{{ uv-install.env }}"  
+    job_variables:  # Add job variables to specify the Python executable
+      # command: "uv run python -m prefect.engine"
+      env:  # Inherit environment variables from uv_install step
+        VIRTUAL_ENV: ".venv"
+        #PATH: "{{ uv-install-step.env.PATH }}"
   schedule:
     cron: "0 * * * *"  # Run hourly at minute 0
     timezone: UTC
