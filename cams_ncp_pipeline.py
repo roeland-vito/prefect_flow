@@ -80,6 +80,9 @@ def main() -> None:
 
     # print current Python executable
     print(f"Python executable: {sys.executable}")
+    # print the current WD and the content of the current directory
+    print(f"Current working directory: {Path.cwd()}")
+    print(f"Content of current directory: {list(Path.cwd().iterdir())}")
 
     # download_cams([
     #     "ensemble", "chimere", "emep"
