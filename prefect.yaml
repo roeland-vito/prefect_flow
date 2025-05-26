@@ -52,7 +52,8 @@ deployments:
   parameters: {}
   work_pool:
     name: test-docker-process-worker
-    
+  job_variables:
+    env: "{{ uv-install.env }}"  
   schedule:
     cron: "0 * * * *"  # Run hourly at minute 0
     timezone: UTC

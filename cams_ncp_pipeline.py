@@ -84,6 +84,16 @@ def main() -> None:
     print(f"Current working directory: {Path.cwd()}")
     print(f"Content of current directory: {list(Path.cwd().iterdir())}")
 
+    # print the environment variables
+    print("Environment variables:")
+    for key, value in sorted(sys.modules['os'].environ.items()):
+        print(f"{key}: {value}")
+
+    # print the sys path
+    print("Python sys.path:")
+    for path in sys.path:
+        print(path)
+
     # download_cams([
     #     "ensemble", "chimere", "emep"
     # ])
