@@ -11,7 +11,7 @@ async def download_observations() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()
 
-    await assert_recent_flow_run("update_station_data")
+    await assert_recent_flow_run("update-station-data")
     print("Flow download_observations done :)")
 
 

@@ -17,7 +17,7 @@ from _utils import assert_recent_flow_run
 
 @flow(log_prints=True)
 async def download_cams_mos() -> None:
-    await assert_recent_flow_run("update_station_data")
+    await assert_recent_flow_run("update-station-data")
     print(f"TODO: download_cams_mos")
     print("CAMS MOS done :)")
 

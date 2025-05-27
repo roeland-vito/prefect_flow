@@ -2,5 +2,6 @@
 build/
 test_flow.egg-info/
 old/
+local/
 __pycache__/
 .idea/

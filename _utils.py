@@ -5,6 +5,7 @@ from pathlib import Path
 from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
 from prefect.blocks.system import Secret
+from prefect.client.schemas.filters import FlowFilterName, FlowFilter
 from prefect.variables import Variable
 from vito.sas.air.cams_client import CAMSEuropeClient, Pollutant
 from prefect.client import get_client
@@ -61,7 +62,10 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         for flow in all_flows:
             print(f"- {flow.name} (ID: {flow.id})")
 
-        flows = await client.read_flows(name=flow_name)
+        # flow for name
+        flow_filter = FlowFilter(name=FlowFilterName(any_=[flow_name]))
+        flows = await client.read_flows(flow_filter=flow_filter)
+
         if not flows:
             return False
 
@@ -71,7 +75,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         runs = await client.read_flow_runs(
             flow_filter={"id": {"any_": [flow_id]}},
             sort="-start_time",
-            limit=10
+            limit=100
         )
 
         for run in runs:

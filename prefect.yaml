@@ -92,4 +92,3 @@ deployments:
   schedule:
     cron: "0 */6 * * *"  # Run every 6 hours to ensure dependency is met
     timezone: UTC
-    
