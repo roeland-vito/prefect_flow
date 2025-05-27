@@ -172,6 +172,7 @@ def _download_cams_mos_zip_file(temp_folder: Path, pollutant: str, base_date: da
     api_key = get_secret("cams_api_key")
     api_url = Variable.get("cams_api_url", "https://ads.atmosphere.copernicus.eu/api")
 
+    print(f"Downloading CAMS MOS data for pollutant {pollutant} from {api_url} to {temp_folder.absolute()}")
     zip_file = cams_mos.download(temp_folder, api_url=api_url, api_key=api_key, session=session)
 
     return zip_file

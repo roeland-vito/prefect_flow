@@ -32,7 +32,7 @@ deployments:
     - netcdf
   description: "Download CAMS netcdf files every day."
   concurrency_limit: null
-  entrypoint: ncp_flow_cams_mos.py:download_cams_mos
+  entrypoint: ncp_flow_cams.py:download_cams_netcdf_all
   parameters: {}
   work_pool:
     name: test-docker-process-worker
@@ -50,7 +50,7 @@ deployments:
     - mos
   description: "Download CAMS MOS data every day."
   concurrency_limit: null
-  entrypoint: ncp_flow_cams.py:download_cams_netcdf_all
+  entrypoint: ncp_flow_cams_mos.py:download_cams_mos
   parameters: {}
   work_pool:
     name: test-docker-process-worker
