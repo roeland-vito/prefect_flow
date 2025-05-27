@@ -13,14 +13,14 @@ from _utils import print_env, assert_recent_flow_run, ncp_api_client
 
 
 @flow(log_prints=True)
-async def download_observations() -> None:
-    if await Variable.get("debug_python_worker_env", False):
+def download_observations() -> None:
+    if Variable.get("debug_python_worker_env", False):
         print_env()
 
-    await assert_recent_flow_run("update-station-data")
+    assert_recent_flow_run("update-station-data")
 
     session = requests.Session()
-    session.verify = await Variable.get("ssl_verify", True)
+    session.verify = Variable.get("ssl_verify", True)
     sos_client = SOSClient(session=session)
 
     obs_client: ObservationClient  = ncp_api_client().observation
