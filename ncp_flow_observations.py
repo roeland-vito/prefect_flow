@@ -14,16 +14,14 @@ from vito.sas.air.sos_client import SOSClient, Station, Observation
 from _utils import print_env, assert_recent_flow_run, ncp_api_client
 
 
-@task(retries=2, retry_delay_seconds=30)
-def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClient, start_time: datetime,
-                             end_time: datetime, station_name: str, quantity_names: List[str]) -> Dict[
-    str, List[ObservationHourly]]:
+@task(retries=3, retry_delay_seconds=30)
+def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClient, start_time: datetime, end_time: datetime, station_name: str, quantity_names: List[str])\
+        -> Dict[str, List[ObservationHourly]]:
     """
     Download observations for a given station and quantity names.
     Returns a dictionary with pollutant names as keys and lists of ObservationHourly as values.
     """
     return_dict: Dict[str, List[ObservationHourly]] = {}
-
     try:
         for pollutant in quantity_names:
             observations: List[Observation] = sos_client.get_observations(
@@ -34,17 +32,15 @@ def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClien
             )
             observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
             created_obs = obs_client.create_observations(observations_hourly)
-            print(f"✓ Created {len(created_obs)} observations for station {station_name} and pollutant {pollutant}")
 
         print(f"✓ Successfully processed station: {station_name}")
         return return_dict
-
     except Exception as e:
         print(f"✗ Error processing station {station_name}: {str(e)}")
         raise
 
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=10))
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
 def download_observations() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()
@@ -63,10 +59,9 @@ def download_observations() -> None:
     print("quantity_names: ", quantity_names)
     stations: Dict[str, Station] = sos_client.get_stations_cached()
 
+    delta_hours_observations = int(Variable.get("delta_hours_observations", default=8))
     datetime_end = datetime.now(tz=UTC)
-    datetime_start = datetime_end - timedelta(hours=8)
-
-    print(f"Processing {len(stations)} stations with max 10 concurrent workers...")
+    datetime_start = datetime_end - timedelta(hours=delta_hours_observations)
 
     # Submit all tasks with concurrency control
     task_futures = []
