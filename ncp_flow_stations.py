@@ -1,123 +1,99 @@
-from datetime import datetime, UTC, timedelta
-from typing import Dict, List
+from typing import List, Dict, Set
 
-import pandas as pd
 import requests
-from cams_ncp_client.observation import ObservationClient
-from cams_ncp_client.quantity import QuantityClient
-from cams_ncp_client.schemas.common import ObservationHourly
-from prefect import flow, task
-from prefect.task_runners import ConcurrentTaskRunner
+from cams_ncp_client.schemas.common import MeasuringStation, StationType, AreaType, Quantity, TableData
+from cams_ncp_client.station import StationClient
+from cams_ncp_client.utils.string_utils import map_to_literal
+from prefect import flow
 from prefect.variables import Variable
-from vito.sas.air.sos_client import SOSClient, Station, Observation
+from vito.sas.air.ircel_wfs_client import SosStation, IrcelWfsClient
+from vito.sas.air.sos_client import Station, SOSClient
 
-from _utils import print_env, assert_recent_flow_run, ncp_api_client
-
-
-@task(retries=2, retry_delay_seconds=30)
-def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClient, start_time: datetime,
-                             end_time: datetime, station_name: str, quantity_names: List[str]) -> Dict[
-    str, List[ObservationHourly]]:
-    """
-    Download observations for a given station and quantity names.
-    Returns a dictionary with pollutant names as keys and lists of ObservationHourly as values.
-    """
-    return_dict: Dict[str, List[ObservationHourly]] = {}
-
-    try:
-        for pollutant in quantity_names:
-            observations: List[Observation] = sos_client.get_observations(
-                station_name=station_name,
-                pollutant=pollutant.upper(),
-                start_time=start_time,
-                end_time=end_time
-            )
-            observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
-            created_obs = obs_client.create_observations(observations_hourly)
-            print(f"✓ Created {len(created_obs)} observations for station {station_name} and pollutant {pollutant}")
-
-        print(f"✓ Successfully processed station: {station_name}")
-        return return_dict
-
-    except Exception as e:
-        print(f"✗ Error processing station {station_name}: {str(e)}")
-        raise
+from _utils import print_env, ncp_api_client
 
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=10))
-def download_observations() -> None:
+@flow(log_prints=True)
+def update_station_data() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()
 
-    assert_recent_flow_run("update-station-data")
+    quantity_names = _update_quantities()
+    print(f"Updated quantities: {quantity_names}")
+    station_client = ncp_api_client().station
 
     session = requests.Session()
     session.verify = Variable.get("ssl_verify", True)
+
     sos_client = SOSClient(session=session)
+    ircel_wfs_client = IrcelWfsClient(session=session)
 
-    obs_client: ObservationClient = ncp_api_client().observation
-    quantity_client: QuantityClient = ncp_api_client().quantity
+    # update the station data with data from the WFS client
+    for sos_station in ircel_wfs_client.get_sos_stations():
+        # print("sos_station: ", sos_station)
+        _update_station(station_client, sos_station, quantity_names)
 
-    quantities_df: pd.DataFrame = quantity_client.get_quantities_df()
-    quantity_names: List[str] = quantities_df["name"].tolist()
-    print("quantity_names: ", quantity_names)
-    stations: Dict[str, Station] = sos_client.get_stations_cached()
+    # update the station data with data from the SOS client
+    for station in sos_client.get_stations():
+        _update_station(station_client, station, quantity_names)
 
-    datetime_end = datetime.now(tz=UTC)
-    datetime_start = datetime_end - timedelta(hours=8)
-
-    print(f"Processing {len(stations)} stations with max 10 concurrent workers...")
-
-    # Submit all tasks with concurrency control
-    task_futures = []
-    for station_name, station in stations.items():
-        future = download_obs_for_station.submit(
-            sos_client=sos_client,
-            obs_client=obs_client,
-            start_time=datetime_start,
-            end_time=datetime_end,
-            station_name=station_name,
-            quantity_names=quantity_names
-        )
-        task_futures.append((station_name, future))
-
-    # Wait for all tasks and handle results/errors
-    successful_stations = []
-    failed_stations = []
-
-    for station_name, future in task_futures:
-        try:
-            result = future.result()
-            successful_stations.append(station_name)
-        except Exception as e:
-            failed_stations.append((station_name, str(e)))
-            print(f"✗ Station {station_name} failed: {str(e)}")
-
-    print(f"✓ Successfully processed {len(successful_stations)} stations")
-    if failed_stations:
-        print(f"✗ Failed to process {len(failed_stations)} stations:")
-        for station_name, error in failed_stations:
-            print(f"  - {station_name}: {error}")
-
-    print("Flow download_observations done :)")
+    print("Flow update_station_data done :)")
 
 
-def _convert_observations_to_hourly(observations: List[Observation]) -> List[ObservationHourly]:
-    """
-    Convert a list of Observation to ObservationHourly.
-    """
-    observations_hourly = []
-    for obs in observations:
-        hourly_obs = ObservationHourly(
-            result_time=obs.result_time,
-            station_name=obs.station_eoi_code,
-            quantity_name=obs.pollutant_name,
-            value=obs.value,
-            meta_data=obs.meta_data
-        )
-        observations_hourly.append(hourly_obs)
-    return observations_hourly
+def _update_station(station_client: StationClient, station: SosStation | Station, allowed_quantities: Set[str]):
+    local_code = station.local_code
+    stations: TableData[MeasuringStation] = station_client.find_stations(limit=1, name=[local_code])
+    if len(stations) == 0:
+        measuring_station = station_client.create_station(MeasuringStation(name=local_code, description=local_code, lat=0.0, lon=0.0, altitude=0.0))
+    else:
+        measuring_station = stations[0]
+    if isinstance(station, SosStation):
+        _update_measuring_station_from_sos_station(station, measuring_station)
+    elif isinstance(station, Station):
+        _update_measuring_station_from_station(station, measuring_station, allowed_quantities)
+    else:
+        raise ValueError(f"Unknown station type: {type(station)}")
+    print(f"update_station: {measuring_station.name}")
+    station_client.update_station(measuring_station)
 
+
+def _update_measuring_station_from_sos_station(station: SosStation, measuring_station: MeasuringStation):
+    measuring_station.name = station.local_code
+    measuring_station.eoi_code = station.eoi_code
+    measuring_station.description = station.description
+    measuring_station.lat = station.latitude
+    measuring_station.lon = station.longitude
+    measuring_station.station_type = map_to_literal(station.station_type, StationType)
+    measuring_station.area_type = map_to_literal(station.area_type, AreaType)
+    if measuring_station.meta_data is None:
+        measuring_station.meta_data = {}
+    measuring_station.meta_data['zone_code'] = station.zone_code
+
+
+def _update_measuring_station_from_station(station: Station, measuring_station: MeasuringStation, allowed_quantities: Set[str]):
+    measuring_station.name = station.local_code
+    measuring_station.description = station.description
+    measuring_station.lat = station.latitude
+    measuring_station.lon = station.longitude
+    measuring_station.quantities = [pollutant.name.lower() for pollutant in station.pollutants if pollutant.name.lower() in allowed_quantities]
+
+
+def _update_quantities() -> Set[str]:
+    quantity_client = ncp_api_client().quantity
+    quantities = _read_quantities()
+    quantity_names= set()
+    for quantity in quantities:
+        created_quantity = quantity_client.upsert_quantity(quantity)
+        print("created_quantity: ", created_quantity)
+        quantity_names.add(created_quantity.name)
+    return quantity_names
+
+
+def _read_quantities() -> List[Quantity]:
+    quantity_data: List[Dict] = Variable.get("quantities", [])
+    return_list: List[Quantity] = []
+    for quantity in quantity_data:
+        return_list.append( Quantity.model_validate(quantity))
+    return return_list
 
 if __name__ == "__main__":
-    download_observations()
+    update_station_data()
