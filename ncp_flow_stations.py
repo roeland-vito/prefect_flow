@@ -16,7 +16,7 @@ from _utils import print_env, ncp_api_client
 
 
 @flow(log_prints=True)
-async def update_station_data() -> None:
+def update_station_data() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()
 

@@ -6,7 +6,6 @@ from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
 from prefect.blocks.system import Secret
 from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, FlowRunFilterId
-from prefect.client.schemas.sorting import FlowRunSort
 from prefect.variables import Variable
 from vito.sas.air.cams_client import CAMSEuropeClient, Pollutant
 from prefect.client import get_client
