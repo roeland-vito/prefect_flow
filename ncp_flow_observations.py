@@ -1,9 +1,13 @@
 from datetime import datetime, UTC, timedelta
+from statistics import quantiles
 from typing import Dict, List
 
+import pandas as pd
 import requests
 from cams_ncp_client.observation import ObservationClient
+from cams_ncp_client.quantity import QuantityClient
 from cams_ncp_client.schemas.common import ObservationHourly
+from numpy.testing.print_coercion_tables import print_coercion_table
 from prefect import flow
 from prefect.variables import Variable
 from vito.sas.air.cams_client import Pollutant
@@ -24,20 +28,25 @@ def download_observations() -> None:
     sos_client = SOSClient(session=session)
 
     obs_client: ObservationClient  = ncp_api_client().observation
+    quantity_client: QuantityClient = ncp_api_client().quantity
 
-    pollutants:  Dict[str, Pollutant] = sos_client.get_pollutants_cached()
+    # pollutants:  Dict[str, Pollutant] = sos_client.get_pollutants_cached()
+    quantities_df: pd.DataFrame = quantity_client.get_quantities_df()
+    quantity_names: List[str] = quantities_df["name"].tolist()
+    print("quantity_names: ", quantity_names)
     stations:  Dict[str, Station] = sos_client.get_stations_cached()
 
     datetime_end = datetime.now(tz=UTC)
     datetime_start = datetime_end - timedelta(hours=8)
 
     for station_name, station in stations.items():
-        for pollutant in pollutants.values():
-            observations: List[Observation] = sos_client.get_observations(station_name=station_name, pollutant=pollutant.name, start_time=datetime_start, end_time=datetime_end)
+        for pollutant in quantity_names:
+            observations: List[Observation] = sos_client.get_observations(station_name=station_name, pollutant=pollutant, start_time=datetime_start, end_time=datetime_end)
             # convert to List[ObservationHourly]
             observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
+            print(f"create_observations: station_name: {station_name}, pollutant: {pollutant}")
             created_obs = obs_client.create_observations(observations_hourly)
-            print(f"created {len(created_obs)} observations for station {station_name} and pollutant {pollutant.name}")
+            print(f"created {len(created_obs)} observations for station {station_name} and pollutant {pollutant}")
 
     print("Flow download_observations done :)")
 
