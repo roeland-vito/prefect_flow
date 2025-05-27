@@ -1,7 +1,7 @@
 name: cams-ncp-pipeline
 prefect-version: 3.4.0
 
-# No build steps needed (environment setup is handled in the command)
+# No build steps needed (environment setup is handled in the pull step)
 build: null
 
 pull:
@@ -30,9 +30,10 @@ deployments:
   tags:
     - cams
     - netcdf
+    - cdsapi
   description: "Download CAMS netcdf files every day."
   concurrency_limit: null
-  entrypoint: ncp_flow_cams.py:download_cams_netcdf_all
+  entrypoint: ncp_flow_cams_europe_api.py:download_cams_europe_api
   parameters: {}
   work_pool:
     name: test-docker-process-worker
@@ -48,6 +49,7 @@ deployments:
   tags:
     - cams
     - mos
+    - cdsapi
   description: "Download CAMS MOS data every day."
   concurrency_limit: null
   entrypoint: ncp_flow_cams_mos.py:download_cams_mos
@@ -65,6 +67,7 @@ deployments:
   version: null
   tags:
     - observations
+    - sosapi
   description: "Download observations data every 30 minutes"
   concurrency_limit: null
   entrypoint: ncp_flow_observations.py:download_observations
@@ -81,6 +84,7 @@ deployments:
   version: null
   tags:
     - stations
+    - sosapi
   description: "Update station data"
   concurrency_limit: null
   entrypoint: ncp_flow_stations.py:update_station_data

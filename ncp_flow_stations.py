@@ -105,8 +105,8 @@ def _update_station_from_sos_client(session: requests.Session, station_client: S
 
 @flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
 def update_station_data() -> None:
-    if Variable.get("debug_python_worker_env", False):
-        print_env()
+    # if Variable.get("debug_python_worker_env", False):
+    #     print_env()
 
     quantity_names = _update_quantities()
     station_client = ncp_api_client().station

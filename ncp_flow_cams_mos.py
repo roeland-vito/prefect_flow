@@ -70,7 +70,7 @@ def download_cams_mos() -> None:
     if failed_pollutants:
         print(f"✗ Failed to run {len(failed_pollutants)} tasks:")
         for pollutant, error in failed_pollutants:
-            print(f"  Task for pollutant {pollutant}: {error}")
+            print(f"  Error for pollutant {pollutant}: {error}")
 
     print("CAMS MOS done :)")
 

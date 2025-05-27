@@ -42,8 +42,8 @@ def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClien
 
 @flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
 def download_observations() -> None:
-    if Variable.get("debug_python_worker_env", False):
-        print_env()
+    # if Variable.get("debug_python_worker_env", False):
+    #     print_env()
 
     assert_recent_flow_run("update-station-data")
 
