@@ -11,30 +11,69 @@ from cams_ncp_client.model import ModelClient
 from cams_ncp_client.schemas.common import ForecastHourly, ForecastModel, MeasuringStation
 from cams_ncp_client.station import StationClient
 from cams_ncp_client.utils.pandas_utils import read_csv
-from prefect import flow
+from prefect import flow, task
+from prefect.task_runners import ConcurrentTaskRunner
 from prefect.variables import Variable
 from vito.sas.air.cams_client import Pollutant, CAMSMosClient
 
 from _utils import assert_recent_flow_run, get_secret, ncp_api_client
 
 
-@flow(log_prints=True)
-def download_cams_mos() -> None:
-    assert_recent_flow_run("update-station-data")
-
-    # create a temporary directory for downloading files
-    with tempfile.TemporaryDirectory() as tmpdir:
-        temp_folder = Path(tmpdir)
-        for pollutant in Pollutant.all():
+@task(retries=3, retry_delay_seconds=30)
+def download_cams_mos_for_pollutant(pollutant: str):
+    """Download CAMS MOS data for a single pollutant"""
+    try:
+        print(f"Starting download for pollutant: {pollutant}")
+        # Create a temporary directory for downloading files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_folder = Path(tmpdir)
+            # Download and process only the specified pollutant
             zip_file: Path = _download_cams_mos_zip_file(temp_folder, pollutant, date.today())
-            # extract the zip file in a subdirectory named after the zip file
+            # Extract the zip file in a subdirectory named after the zip file
             subfolder = temp_folder / zip_file.stem
             subfolder.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(zip_file, 'r') as zf:
                 zf.extractall(subfolder)
             _upload_cams_mos_data(subfolder)
 
+        print(f"✓ Successfully processed pollutant: {pollutant}")
+        return pollutant
+    except Exception as e:
+        print(f"✗ Error processing pollutant {pollutant}: {str(e)}")
+        raise
+
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=5))
+def download_cams_mos() -> None:
+    assert_recent_flow_run("update-station-data")
+
+    pollutants = list(Pollutant.all())
+    # Submit all pollutant tasks concurrently
+    task_futures = []
+    for pollutant in pollutants:
+        future = download_cams_mos_for_pollutant.submit(pollutant)
+        task_futures.append((pollutant, future))
+
+    # Wait for all tasks and handle results/errors
+    successful_pollutants = []
+    failed_pollutants = []
+
+    for pollutant, future in task_futures:
+        try:
+            result = future.result()
+            successful_pollutants.append(pollutant)
+        except Exception as e:
+            failed_pollutants.append((pollutant, str(e)))
+            print(f"✗ Task CAMS MOS for pollutant {pollutant} failed: {str(e)}")
+
+    # Final summary
+    print(f"✓ Successfully ran {len(successful_pollutants)} tasks.")
+    if failed_pollutants:
+        print(f"✗ Failed to run {len(failed_pollutants)} tasks:")
+        for pollutant, error in failed_pollutants:
+            print(f"  Task for pollutant {pollutant}: {error}")
+
     print("CAMS MOS done :)")
+
 
 def _assert_mos_model_exists(model_client: ModelClient) -> ForecastModel:
     """
@@ -42,6 +81,7 @@ def _assert_mos_model_exists(model_client: ModelClient) -> ForecastModel:
     """
     models = model_client.find_models(name="MOS")
     if len(models) == 0:
+        print("Creating MOS model in the database...")
         model = model_client.create_model(ForecastModel(
             name="MOS",
             description="CAMS MOS model",
@@ -56,6 +96,7 @@ def _upload_cams_mos_data(dir_data: Path) -> List[ForecastHourly]:
     """
     Upload CAMS MOS data from CSV files in the specified directory.
     """
+    print(f"_upload_cams_mos_data from csv files in {dir_data.absolute()}")
     station_client = ncp_api_client().station
     forecast_client =  ncp_api_client().forecast
     model_client =  ncp_api_client().model
@@ -72,6 +113,7 @@ def _upload_cams_mos_data(dir_data: Path) -> List[ForecastHourly]:
     created_forecasts: List[ForecastHourly] = []
     # iterate over the mos_*.csv files in the directory
     for csv_file in dir_data.glob("mos_*.csv"):
+        print(f"Processing file: {csv_file.name}")
         filename = str(csv_file.stem)
         filename_split = filename.split("_")
         # parse reference date from the filename (mos_D2_PM25_hourly_2025-04-01_BE)
@@ -144,6 +186,7 @@ def _assert_station_names_exist(pollutant: str, station_eoi_codes: List[str], df
             if len(station_row) == 0:
                 raise ValueError(f"Station {station_eoi_code} not found in the database and not in the MOS station list")
             else:
+                print(f"Creating station {station_eoi_code} for pollutant {pollutant} in the database")
                 measuring_station = MeasuringStation(
                     name=station_eoi_code,
                     description=station_eoi_code,
