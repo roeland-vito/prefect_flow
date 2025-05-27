@@ -1,6 +1,7 @@
 import json
 from typing import List, Dict, Set
 
+import requests
 from cams_ncp_client.utils.string_utils import map_to_literal
 from cams_ncp_client.client import CamsNcpApiClient
 from cams_ncp_client.client import CamsNcpApiClient
@@ -23,8 +24,14 @@ def update_station_data() -> None:
     quantity_names = _update_quantities()
     print(f"Updated quantities: {quantity_names}")
     station_client = ncp_api_client().station
-    sos_client = SOSClient()
-    ircel_wfs_client = IrcelWfsClient()
+
+    session = requests.Session()
+    verify_ssl = Variable.get("ssl_verify", True)
+    print(f"Verifying SSL: {verify_ssl}")
+    session.verify = verify_ssl
+
+    sos_client = SOSClient(session=session)
+    ircel_wfs_client = IrcelWfsClient(session=session)
 
     # update the station data with data from the WFS client
     for sos_station in ircel_wfs_client.get_sos_stations():
