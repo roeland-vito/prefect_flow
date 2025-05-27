@@ -41,7 +41,7 @@ def download_observations() -> None:
 
     for station_name, station in stations.items():
         for pollutant in quantity_names:
-            observations: List[Observation] = sos_client.get_observations(station_name=station_name, pollutant=pollutant, start_time=datetime_start, end_time=datetime_end)
+            observations: List[Observation] = sos_client.get_observations(station_name=station_name, pollutant=pollutant.upper(), start_time=datetime_start, end_time=datetime_end)
             # convert to List[ObservationHourly]
             observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
             print(f"create_observations: station_name: {station_name}, pollutant: {pollutant}")
@@ -60,7 +60,7 @@ def _convert_observations_to_hourly(observations: List[Observation]) -> List[Obs
         hourly_obs = ObservationHourly(
             result_time=obs.result_time,
             station_name=obs.station_eoi_code,
-            quantity_name=obs.pollutant_name.upper(),
+            quantity_name=obs.pollutant_name,
             value=obs.value,
             meta_data=obs.meta_data
         )
