@@ -33,8 +33,24 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
         if not flow:
             raise ValueError(f"Flow '{flow_name}' not found.")
 
-        flow_run = await client.create_flow_run(flow_id=flow.id, name=f"{flow_name}-manual-run-from-assert_recent_flow_run()-{datetime.now().isoformat()}")
-        print(f"Triggered flow run {flow_run.id}. Waiting for it to complete...")
+        # get deployment for the flow
+        # deployments = await client.read_deployments(flow_id=flow.id)
+        #
+        # client.c
+        #
+        # flow_run = await client.create_flow_run(flow_id=flow.id, name=f"{flow_name}-manual-run-from-assert_recent_flow_run()-{datetime.now().isoformat()}")
+        # print(f"Triggered flow run {flow_run.id}. Waiting for it to complete...")
+
+        deployments = await client.read_deployments(flow_filter=FlowFilter(id=FlowFilterId(any_=[flow.id])))
+        if not deployments:
+            raise ValueError(f"No deployments found for flow '{flow_name}'.")
+
+        deployment = deployments[0]  # optionally select based on name or tag
+        flow_run = await client.create_flow_run_from_deployment(
+            deployment_id=deployment.id,
+            name=f"{flow_name}-manual-run-{datetime.now().isoformat()}",
+            parameters={}  # Optional: set flow parameters here
+        )
 
         # Poll the flow run status until completion
         while True:
