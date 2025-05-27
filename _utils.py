@@ -77,9 +77,9 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
 
         # Get recent flow runs with proper filter object
         runs = await client.read_flow_runs(
-            flow_filter=flow_run_filter,
-            sort=FlowRunSort.START_TIME_DESC,
-            limit=100
+            flow_filter=flow_run_filter
+            # sort=FlowRunSort.START_TIME_DESC,
+            # limit=100
         )
 
         for run in runs:
