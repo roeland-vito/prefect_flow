@@ -19,29 +19,6 @@ from vito.sas.air.cams_client import Pollutant, CAMSMosClient
 from _utils import assert_recent_flow_run, get_secret, ncp_api_client
 
 
-@task(retries=3, retry_delay_seconds=30)
-def download_cams_mos_for_pollutant(pollutant: str):
-    """Download CAMS MOS data for a single pollutant"""
-    try:
-        print(f"Starting download for pollutant: {pollutant}")
-        # Create a temporary directory for downloading files
-        with tempfile.TemporaryDirectory() as tmpdir:
-            temp_folder = Path(tmpdir)
-            # Download and process only the specified pollutant
-            zip_file: Path = _download_cams_mos_zip_file(temp_folder, pollutant, date.today())
-            # Extract the zip file in a subdirectory named after the zip file
-            subfolder = temp_folder / zip_file.stem
-            subfolder.mkdir(parents=True, exist_ok=True)
-            with zipfile.ZipFile(zip_file, 'r') as zf:
-                zf.extractall(subfolder)
-            _upload_cams_mos_data(subfolder)
-
-        print(f"✓ Successfully processed pollutant: {pollutant}")
-        return pollutant
-    except Exception as e:
-        print(f"✗ Error processing pollutant {pollutant}: {str(e)}")
-        raise
-
 @flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=5))
 def download_cams_mos() -> None:
     assert_recent_flow_run("update-station-data")
@@ -73,6 +50,30 @@ def download_cams_mos() -> None:
             print(f"  Error for pollutant {pollutant}: {error}")
 
     print("CAMS MOS done :)")
+
+
+@task(retries=3, retry_delay_seconds=30)
+def download_cams_mos_for_pollutant(pollutant: str):
+    """Download CAMS MOS data for a single pollutant"""
+    try:
+        print(f"Starting download for pollutant: {pollutant}")
+        # Create a temporary directory for downloading files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_folder = Path(tmpdir)
+            # Download and process only the specified pollutant
+            zip_file: Path = _download_cams_mos_zip_file(temp_folder, pollutant, date.today())
+            # Extract the zip file in a subdirectory named after the zip file
+            subfolder = temp_folder / zip_file.stem
+            subfolder.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(zip_file, 'r') as zf:
+                zf.extractall(subfolder)
+            _upload_cams_mos_data(subfolder)
+
+        print(f"✓ Successfully processed pollutant: {pollutant}")
+        return pollutant
+    except Exception as e:
+        print(f"✗ Error processing pollutant {pollutant}: {str(e)}")
+        raise
 
 
 def _assert_mos_model_exists(model_client: ModelClient) -> ForecastModel:

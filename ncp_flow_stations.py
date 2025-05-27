@@ -13,6 +13,33 @@ from vito.sas.air.sos_client import Station, SOSClient
 from _utils import print_env, ncp_api_client
 
 
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
+def update_station_data() -> None:
+    # if Variable.get("debug_python_worker_env", False):
+    #     print_env()
+
+    quantity_names = _update_quantities()
+    station_client = ncp_api_client().station
+
+    session = requests.Session()
+    session.verify = Variable.get("ssl_verify", True)
+
+    wfs_successful, wfs_failed = _update_station_from_ircel_wfs_client(session, station_client, quantity_names)
+    sos_successful, sos_failed = _update_station_from_sos_client(session, station_client, quantity_names)
+
+    print(f"WFS update: {len(wfs_successful)} successful, {len(wfs_failed)} failed")
+    if wfs_failed:
+        for station_code, error in wfs_failed:
+            print(f"  ✗ WFS {station_code}: {error}")
+
+    print(f"SOS update: {len(sos_successful)} successful, {len(sos_failed)} failed")
+    if sos_failed:
+        for station_code, error in sos_failed:
+            print(f"  ✗ SOS {station_code}: {error}")
+
+    print("Flow update_station_data done :)")
+
+
 @task(retries=3, retry_delay_seconds=30)
 def update_station(station_client: StationClient, station: SosStation | Station, allowed_quantities: Set[str]):
     try:
@@ -102,32 +129,6 @@ def _update_station_from_sos_client(session: requests.Session, station_client: S
     else:
         print("No stations found from SOS client")
         return [], []
-
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
-def update_station_data() -> None:
-    # if Variable.get("debug_python_worker_env", False):
-    #     print_env()
-
-    quantity_names = _update_quantities()
-    station_client = ncp_api_client().station
-
-    session = requests.Session()
-    session.verify = Variable.get("ssl_verify", True)
-
-    wfs_successful, wfs_failed = _update_station_from_ircel_wfs_client(session, station_client, quantity_names)
-    sos_successful, sos_failed = _update_station_from_sos_client(session, station_client, quantity_names)
-
-    print(f"WFS update: {len(wfs_successful)} successful, {len(wfs_failed)} failed")
-    if wfs_failed:
-        for station_code, error in wfs_failed:
-            print(f"  ✗ WFS {station_code}: {error}")
-
-    print(f"SOS update: {len(sos_successful)} successful, {len(sos_failed)} failed")
-    if sos_failed:
-        for station_code, error in sos_failed:
-            print(f"  ✗ SOS {station_code}: {error}")
-
-    print("Flow update_station_data done :)")
 
 
 def _update_measuring_station_from_sos_station(station: SosStation, measuring_station: MeasuringStation):

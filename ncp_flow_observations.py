@@ -11,33 +11,7 @@ from prefect.task_runners import ConcurrentTaskRunner
 from prefect.variables import Variable
 from vito.sas.air.sos_client import SOSClient, Station, Observation
 
-from _utils import print_env, assert_recent_flow_run, ncp_api_client
-
-
-@task(retries=3, retry_delay_seconds=30)
-def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClient, start_time: datetime, end_time: datetime, station_name: str, quantity_names: List[str])\
-        -> Dict[str, List[ObservationHourly]]:
-    """
-    Download observations for a given station and quantity names.
-    Returns a dictionary with pollutant names as keys and lists of ObservationHourly as values.
-    """
-    return_dict: Dict[str, List[ObservationHourly]] = {}
-    try:
-        for pollutant in quantity_names:
-            observations: List[Observation] = sos_client.get_observations(
-                station_name=station_name,
-                pollutant=pollutant.upper(),
-                start_time=start_time,
-                end_time=end_time
-            )
-            observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
-            created_obs = obs_client.create_observations(observations_hourly)
-
-        print(f"✓ Successfully processed station: {station_name}")
-        return return_dict
-    except Exception as e:
-        print(f"✗ Error processing station {station_name}: {str(e)}")
-        raise
+from _utils import assert_recent_flow_run, ncp_api_client
 
 
 @flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
@@ -95,6 +69,32 @@ def download_observations() -> None:
             print(f"  - {station_name}: {error}")
 
     print("Flow download_observations done :)")
+
+
+@task(retries=3, retry_delay_seconds=30)
+def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClient, start_time: datetime, end_time: datetime, station_name: str, quantity_names: List[str])\
+        -> Dict[str, List[ObservationHourly]]:
+    """
+    Download observations for a given station and quantity names.
+    Returns a dictionary with pollutant names as keys and lists of ObservationHourly as values.
+    """
+    return_dict: Dict[str, List[ObservationHourly]] = {}
+    try:
+        for pollutant in quantity_names:
+            observations: List[Observation] = sos_client.get_observations(
+                station_name=station_name,
+                pollutant=pollutant.upper(),
+                start_time=start_time,
+                end_time=end_time
+            )
+            observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
+            created_obs = obs_client.create_observations(observations_hourly)
+
+        print(f"✓ Successfully processed station: {station_name}")
+        return return_dict
+    except Exception as e:
+        print(f"✗ Error processing station {station_name}: {str(e)}")
+        raise
 
 
 def _convert_observations_to_hourly(observations: List[Observation]) -> List[ObservationHourly]:
