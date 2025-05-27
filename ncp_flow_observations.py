@@ -29,10 +29,10 @@ def download_obs_for_station(sos_client: SOSClient, obs_client: ObservationClien
         observations: List[Observation] = sos_client.get_observations(station_name=station_name, pollutant=pollutant.upper(),  start_time=start_time, end_time=end_time)
         observations_hourly: List[ObservationHourly] = _convert_observations_to_hourly(observations)
         created_obs = obs_client.create_observations(observations_hourly)
-        print(f"created {len(created_obs)} observations for station {station_name} and pollutant {pollutant}")
+        # print(f"created {len(created_obs)} observations for station {station_name} and pollutant {pollutant}")
     return return_dict
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=20))
+@flow(log_prints=True)
 def download_observations() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()

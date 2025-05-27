@@ -91,7 +91,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         # runs = await client.read_flow_runs(flow_run_filter=flow_run_filter)
 
         runs = await client.read_flow_runs(flow_filter=flow_name_filter)
-        print(f"runs for flow {flow_name}: ", runs)
+        print(f"runs for flow {flow_name}: ", len(runs))
 
         for run in runs:
             if run.state.name == "Completed" and run.end_time and run.end_time >= since:
