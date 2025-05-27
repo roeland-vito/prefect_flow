@@ -8,5 +8,5 @@ dependencies = [
     "prefect",
 	"loguru",
     "sasair[cds]",
-	"cams-ncp-client==0.0.9"
+	"cams-ncp-client==0.0.10"
 ]

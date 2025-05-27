@@ -1,0 +1,58 @@
+[
+  {
+    "name": "PM25",
+    "description": "Particulate Matter < 2.5 µm",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 140.0
+  },
+  {
+    "name": "PM10",
+    "description": "Particulate Matter < 10 µm",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 200.0
+  },
+  {
+    "name": "CO",
+    "description": "Carbon Monoxide",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 5.0
+  },
+  {
+    "name": "BC",
+    "description": "Black Carbon",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 10.0
+  },
+  {
+    "name": "SO2",
+    "description": "Sulphur dioxide",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 200.0
+  },
+  {
+    "name": "NO",
+    "description": "Nitrogen monoxide",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 250.0
+  },
+  {
+    "name": "O3",
+    "description": "Ozone",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 150.0
+  },
+  {
+    "name": "NO2",
+    "description": "Nitrogen dioxide",
+    "unit": "µg/m³",
+    "min_value": 0.0,
+    "max_value": 140
+  }
+]

@@ -33,14 +33,6 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
         if not flow:
             raise ValueError(f"Flow '{flow_name}' not found.")
 
-        # get deployment for the flow
-        # deployments = await client.read_deployments(flow_id=flow.id)
-        #
-        # client.c
-        #
-        # flow_run = await client.create_flow_run(flow_id=flow.id, name=f"{flow_name}-manual-run-from-assert_recent_flow_run()-{datetime.now().isoformat()}")
-        # print(f"Triggered flow run {flow_run.id}. Waiting for it to complete...")
-
         deployments = await client.read_deployments(flow_filter=FlowFilter(id=FlowFilterId(any_=[flow.id])))
         if not deployments:
             raise ValueError(f"No deployments found for flow '{flow_name}'.")
@@ -48,7 +40,7 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
         deployment = deployments[0]  # optionally select based on name or tag
         flow_run = await client.create_flow_run_from_deployment(
             deployment_id=deployment.id,
-            name=f"{flow_name}-manual-run-{datetime.now().isoformat()}",
+            name=f"{flow_name}-manual-run-from-assert_recent_flow_run()-at-{datetime.now().isoformat()}",
             parameters={}  # Optional: set flow parameters here
         )
 
@@ -92,12 +84,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         flow_run_filter = FlowRunFilter(id=FlowRunFilterId(any_=[flow_id]))
 
         # Get recent flow runs with proper filter object
-        runs = await client.read_flow_runs(
-            flow_run_filter=flow_run_filter
-            # sort=FlowRunSort.START_TIME_DESC,
-            # limit=100
-        )
-        # runs = await client.read_flow_runs(id=flow_id)
+        runs = await client.read_flow_runs(flow_run_filter=flow_run_filter)
 
         for run in runs:
             if run.state.name == "Completed" and run.end_time and run.end_time >= since:
