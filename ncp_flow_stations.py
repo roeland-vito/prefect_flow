@@ -87,7 +87,7 @@ def _update_quantities() -> Set[str]:
 
 
 def _read_quantities() -> List[Quantity]:
-    quantity_data: List[Dict] = Variable.get("quantities", [], cast=List[Dict])
+    quantity_data: List[Dict] = Variable.get("quantities", [])
     return_list: List[Quantity] = []
     for quantity in quantity_data:
         return_list.append( Quantity.model_validate(quantity))
