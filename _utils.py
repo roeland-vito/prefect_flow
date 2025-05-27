@@ -1,6 +1,8 @@
 import asyncio
 import sys
 from pathlib import Path
+from types import coroutine
+from typing import Any
 
 from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
@@ -80,11 +82,15 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
 
         flow_id = flows[0].id
 
+        print(f"flow_id: ", flow_id)
+
         # Get recent flow runs
         flow_run_filter = FlowRunFilter(id=FlowRunFilterId(any_=[flow_id]))
 
         # Get recent flow runs with proper filter object
         runs = await client.read_flow_runs(flow_run_filter=flow_run_filter)
+
+        print(f"runs for flow {flow_name}: ", runs)
 
         for run in runs:
             if run.state.name == "Completed" and run.end_time and run.end_time >= since:
@@ -92,11 +98,27 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
 
         return False
 
+async def _get_var(name: str, default: str | None = None) -> Any:
+    """
+    Get a variable from Prefect. If the variable is not set, return the default value.
+    """
+    try:
+        value = Variable.get(name, default=default)
+        # if value is a function, call it
+        if callable(value):
+            return await value()
+        return value
+    except KeyError:
+        if default is not None:
+            return default
+        raise ValueError(f"Variable '{name}' is not set and no default value provided.")
 
 def ncp_api_client() -> CamsNcpApiClient:
     global _ncp_api_client
     if _ncp_api_client is None:
-        api_base_url = Variable.get("cams_ncp_api_base_url", "http://127.0.0.1:5050")
+        # api_base_url = Variable.get("cams_ncp_api_base_url", "http://127.0.0.1:5050")
+        api_base_url = str(_get_var("cams_ncp_api_base_url", default=None))
+
         print(f"Using api_base_url {api_base_url}")
         _ncp_api_client = CamsNcpApiClient(api_base_url)
     return _ncp_api_client
