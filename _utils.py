@@ -5,7 +5,8 @@ from pathlib import Path
 from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
 from prefect.blocks.system import Secret
-from prefect.client.schemas.filters import FlowFilterName, FlowFilter
+from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, FlowRunFilterId
+from prefect.client.schemas.sorting import FlowRunSort
 from prefect.variables import Variable
 from vito.sas.air.cams_client import CAMSEuropeClient, Pollutant
 from prefect.client import get_client
@@ -63,8 +64,8 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
             print(f"- {flow.name} (ID: {flow.id})")
 
         # flow for name
-        flow_filter = FlowFilter(name=FlowFilterName(any_=[flow_name]))
-        flows = await client.read_flows(flow_filter=flow_filter)
+        flow_name_filter = FlowFilter(name=FlowFilterName(any_=[flow_name]))
+        flows = await client.read_flows(flow_filter=flow_name_filter)
 
         if not flows:
             return False
@@ -72,9 +73,12 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         flow_id = flows[0].id
 
         # Get recent flow runs
+        flow_run_filter = FlowRunFilter(id=FlowRunFilterId(any_=[flow_id]))
+
+        # Get recent flow runs with proper filter object
         runs = await client.read_flow_runs(
-            flow_filter={"id": {"any_": [flow_id]}},
-            sort="-start_time",
+            flow_filter=flow_run_filter,
+            sort=FlowRunSort.START_TIME_DESC,
             limit=100
         )
 
