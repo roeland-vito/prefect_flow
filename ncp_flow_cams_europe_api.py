@@ -20,7 +20,7 @@ def download_cams_model_europe_api_for_model(model_name: str) -> str:
         print(f"Starting download for model: {model_name}")
 
         cams_file_client = ncp_api_client().cams_file
-        api_key = get_secret("cams_api_key")
+        api_key = get_secret("cams-api-key")
         api_url = Variable.get("cams_api_url", "https://ads.atmosphere.copernicus.eu/api")
 
         with tempfile.TemporaryDirectory() as tmpdir:
