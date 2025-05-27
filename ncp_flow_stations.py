@@ -26,9 +26,7 @@ def update_station_data() -> None:
     station_client = ncp_api_client().station
 
     session = requests.Session()
-    verify_ssl = Variable.get("ssl_verify", True)
-    print(f"Verifying SSL: {verify_ssl}")
-    session.verify = verify_ssl
+    session.verify = Variable.get("ssl_verify", True)
 
     sos_client = SOSClient(session=session)
     ircel_wfs_client = IrcelWfsClient(session=session)
@@ -58,6 +56,7 @@ def _update_station(station_client: StationClient, station: SosStation | Station
         _update_measuring_station_from_station(station, measuring_station, allowed_quantities)
     else:
         raise ValueError(f"Unknown station type: {type(station)}")
+    print(f"update_station: {measuring_station.name}")
     station_client.update_station(measuring_station)
 
 
