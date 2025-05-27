@@ -19,6 +19,7 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
     Assert that a flow has been run successfully within the last `hours` hours.
     """
     flow_ok = await was_flow_successful_recently(flow_name, hours=8)
+    print(f"Flow '{flow_name}' was run successfully in the last {hours} hours: {flow_ok}")
     if flow_ok:
         print(f"Flow '{flow_name}' ran successfully in the last {hours} hours.")
         return

@@ -51,13 +51,7 @@ async def download_cams_netcdf(model_names: List[str]) -> None:
 
 
 @flow(log_prints=True)
-async def download_cams_mos() -> None:
-    await assert_recent_flow_run("update_station_data")
-    print(f"TODO: download_cams_mos")
-
-
-@flow(log_prints=True)
-def main() -> None:
+async def download_cams_netcdf_all() -> None:
     if Variable.get("debug_python_worker_env", False):
         print_env()
 
@@ -67,4 +61,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    download_cams_netcdf()

@@ -25,13 +25,32 @@ pull:
       stream_output: true
               
 deployments:
-- name: cams-sync
+- name: cams-netcdf-sync
   version: null
   tags:
     - cams
-  description: "Download CAMS netcdf and CAMS MOS data every day."
+    - netcdf
+  description: "Download CAMS netcdf files every day."
   concurrency_limit: null
-  entrypoint: ncp_flow_cams.py:main
+  entrypoint: ncp_flow_cams_mos.py:download_cams_mos
+  parameters: {}
+  work_pool:
+    name: test-docker-process-worker
+    job_variables:
+      # Explicitly use uv
+      command: "uv run python -m prefect.engine"
+  schedule:
+    cron: "0 9 * * *"  # Run daily at 9 AM UTC
+    timezone: UTC
+
+- name: cams-mos-sync
+  version: null
+  tags:
+    - cams
+    - mos
+  description: "Download CAMS MOS data every day."
+  concurrency_limit: null
+  entrypoint: ncp_flow_cams.py:download_cams_netcdf_all
   parameters: {}
   work_pool:
     name: test-docker-process-worker
@@ -48,7 +67,7 @@ deployments:
     - observations
   description: "Download observations data every 30 minutes"
   concurrency_limit: null
-  entrypoint: ncp_flow_observations.py:main
+  entrypoint: ncp_flow_observations.py:download_observations
   parameters: {}
   work_pool:
     name: test-docker-process-worker
@@ -64,7 +83,7 @@ deployments:
     - stations
   description: "Update station data"
   concurrency_limit: null
-  entrypoint: ncp_flow_stations.py:main
+  entrypoint: ncp_flow_stations.py:update_station_data
   parameters: {}
   work_pool:
     name: test-docker-process-worker
@@ -73,3 +92,4 @@ deployments:
   schedule:
     cron: "0 */6 * * *"  # Run every 6 hours to ensure dependency is met
     timezone: UTC
+    

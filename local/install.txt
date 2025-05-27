@@ -19,7 +19,7 @@ prefect variable set cams_api_url "https://ads.atmosphere.copernicus.eu/api"
 
 python -c "import prefect; prefect.blocks.system.Secret(value='c6bfabdf-70e6-4418-9bb3-2c4e4605c136').save(name='cams_api_key', overwrite=True)"
 
-prefect deploy
+prefect deploy --all
 
 
 uv pip install ./ --python .venv/bin/python
