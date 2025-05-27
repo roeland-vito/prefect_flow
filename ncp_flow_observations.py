@@ -60,7 +60,7 @@ def _convert_observations_to_hourly(observations: List[Observation]) -> List[Obs
         hourly_obs = ObservationHourly(
             result_time=obs.result_time,
             station_name=obs.station_eoi_code,
-            quantity_name=obs.pollutant_name,
+            quantity_name=obs.pollutant_name.upper(),
             value=obs.value,
             meta_data=obs.meta_data
         )
