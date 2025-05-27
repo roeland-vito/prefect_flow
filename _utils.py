@@ -74,6 +74,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         flow_name_filter = FlowFilter(name=FlowFilterName(any_=[flow_name]))
         flows = await client.read_flows(flow_filter=flow_name_filter)
 
+        print(f"flows for name {flow_name}: ", flows)
         if not flows:
             return False
 
