@@ -33,7 +33,7 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
         if not flow:
             raise ValueError(f"Flow '{flow_name}' not found.")
 
-        flow_run = await client.create_flow_run(flow=flow)
+        flow_run = await client.create_flow_run(flow_id=flow.id, name=f"{flow_name}-manual-run-from-assert_recent_flow_run()-{datetime.now().isoformat()}")
         print(f"Triggered flow run {flow_run.id}. Waiting for it to complete...")
 
         # Poll the flow run status until completion
