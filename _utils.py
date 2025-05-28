@@ -90,7 +90,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
             flow_filter=flow_name_filter,
             flow_run_filter=FlowRunFilter(state=FlowRunFilterState(name=FlowRunFilterStateName(any_=["Completed"]))),
 
-            limit=10, sort=["-end_time"]
+            limit=10, sort=["START_TIME_DESC"]
             )
         print(f"runs for flow {flow_name}: ", len(runs))
 
