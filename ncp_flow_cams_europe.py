@@ -111,7 +111,7 @@ def _download_cams_model_europe_with_ftp(model_name: str) -> str:
     extent = _get_cams_extent()
     for pollutant in Pollutant.all():
         ftp_client = CAMSftpClient(pollutant=pollutant, ftp_host=ftp_host, ftp_root=ftp_root, ftp_user=get_secret("cams-ftp-user"))
-        print(f"Starting download for model: {model_name} with pollutant: {pollutant}")
+        print(f"Start downloading CAMS data.  model: {model_name} pollutant: {pollutant}")
         with tempfile.TemporaryDirectory() as tmpdir:
             cams_file = ftp_client.download(tmpdir, ftp_pw=get_secret("cams-ftp-pw"))
             # crop the netCDF file to the given extent
