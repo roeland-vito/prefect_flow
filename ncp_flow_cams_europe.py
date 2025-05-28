@@ -46,6 +46,7 @@ def download_cams_europe(model_names: Optional[List[str]] = None) -> None:
 
     # Submit all model tasks concurrently
     task_futures = []
+    model_names = ["ensemble"]
     for model_name in model_names:
         future = download_cams_model_europe_api_for_model.submit(model_name)
         task_futures.append((model_name, future))
@@ -78,8 +79,10 @@ def download_cams_model_europe_api_for_model(model_name: str) -> str:
     try:
         cams_europe_with = Variable.get("cams_europe_with", default="CDS_API")  # CDS_API or FTP are allowed options
         if CAMS_EUROPE_CDS_API == cams_europe_with:
+            print(f"Downloading CAMS Europe data for model {model_name} with CDS API")
             return _download_cams_model_europe_with_cds_api(model_name)
         elif CAMS_EUROPE_FTP == cams_europe_with:
+            print(f"Downloading CAMS Europe data for model {model_name} with FTP")
             return _download_cams_model_europe_with_ftp(model_name)
         else:
             raise ValueError(f"Invalid value for cams_europe_with: {cams_europe_with}. Expected 'CDS_API' or 'FTP'.")
@@ -107,7 +110,7 @@ def _download_cams_model_europe_with_ftp(model_name: str) -> str:
     ftp_root = Variable.get("cams_ftp_root", "/DATA/CAMS_EUROPE_AIR_QUALITY")
     extent = _get_cams_extent()
     for pollutant in Pollutant.all():
-        ftp_client = CAMSftpClient(pollutant=pollutant, ftp_host=ftp_host, ftp_root=ftp_root)
+        ftp_client = CAMSftpClient(pollutant=pollutant, ftp_host=ftp_host, ftp_root=ftp_root, ftp_user=get_secret("cams-ftp-user"))
         print(f"Starting download for model: {model_name} with pollutant: {pollutant}")
         with tempfile.TemporaryDirectory() as tmpdir:
             cams_file = ftp_client.download(tmpdir, ftp_pw=get_secret("cams-ftp-pw"))
