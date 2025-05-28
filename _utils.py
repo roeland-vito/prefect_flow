@@ -2,16 +2,14 @@ import asyncio
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Type, TypeVar, Optional
 
 from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
 from prefect.blocks.system import Secret
 from prefect.client import get_client
-from prefect.client.schemas import StateType
-from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, \
-    FlowRunFilterStateType, FlowRunFilterStateName, FlowRunFilterState
+from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId,  FlowRunFilterStateName, FlowRunFilterState
 from prefect.client.schemas.sorting import FlowRunSort
-# from prefect.server.schemas.filters import FlowRunFilterState
 from prefect.utilities.asyncutils import sync_compatible
 from prefect.variables import Variable
 
@@ -94,6 +92,22 @@ def get_secret(var_name: str) -> str:
     if api_key is None or api_key.strip() == "":
         raise ValueError(f"Sectret {var_name} is not set. Please set the secret in Prefect.")
     return api_key
+
+
+T = TypeVar("T")
+
+def get_var_object(var_name: str, object_type: Type[T], default: T = None) -> Optional[T]:
+    var_value = Variable.get(var_name, default=None)
+    if var_value is None:
+        return default
+    try:
+        if isinstance(var_value, dict):
+            return object_type(**var_value)
+        import json
+        return object_type(**json.loads(str(var_value)))
+    except Exception as e:
+        print(f"Error parsing {object_type.__name__} from Variable '{var_name}': {e}. Using default.")
+        return default
 
 
 def print_env():

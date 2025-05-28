@@ -7,17 +7,15 @@ import requests
 from prefect import flow, task
 from prefect.task_runners import ConcurrentTaskRunner
 from prefect.variables import Variable
+from pydantic import BaseModel
 from vito.sas.air.cams_client import CAMSEuropeClient, Pollutant
 from vito.sas.air.cams_ftp_client import CAMSftpClient
-from pydantic import BaseModel, Field
 from vito.sas.air.utils.cams_utils import crop_to_extent
 
-from _utils import get_secret, ncp_api_client
+from _utils import get_secret, ncp_api_client, get_var_object
 
 CAMS_EUROPE_CDS_API: Final[str] = "CDS_API"
 CAMS_EUROPE_FTP: Final[str] = "FTP"
-
-# create a pydentic data class fot the Extent :  lon_min=2.5, lon_max=6.5, lat_min=49, lat_max=52
 
 
 class Extent(BaseModel):
@@ -46,7 +44,6 @@ def download_cams_europe(model_names: Optional[List[str]] = None) -> None:
 
     # Submit all model tasks concurrently
     task_futures = []
-    model_names = ["ensemble"]
     for model_name in model_names:
         future = download_cams_model_europe_api_for_model.submit(model_name)
         task_futures.append((model_name, future))
@@ -123,24 +120,16 @@ def _download_cams_model_europe_with_ftp(model_name: str) -> str:
 
     return model_name
 
+
 def _get_cams_extent() -> Extent:
-    var_extent = Variable.get("cams_extent", default=None)
-    if var_extent is None:
-        return Extent()
-    else:
-        print("var_extent: ", var_extent)
-        dct_extent: dict = var_extent if isinstance(var_extent, dict) else {}
-        try:
-            return Extent(**dct_extent)
-        except Exception as e:
-            print(f"Error parsing CAMS extent from Variable: {e}. Using default extent.")
-            return Extent()
+    return get_var_object("cams_extent", Extent, default=Extent())
+
 
 def _download_cams_model_europe_with_cds_api(model_name: str) -> str:
     """
     Download CAMS Europe model data using the CDS API.
     """
-    print(f"Starting download for model: {model_name}")
+    print(f"Start downloading  model: {model_name} with CDS API")
 
     api_key = get_secret("cams-api-key")
     api_url = Variable.get("cams_api_url", "https://ads.atmosphere.copernicus.eu/api")
