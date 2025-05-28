@@ -33,7 +33,7 @@ deployments:
     - cdsapi
   description: "Download CAMS netcdf files every day."
   concurrency_limit: null
-  entrypoint: ncp_flow_cams_europe.py:download_cams_europe_api
+  entrypoint: ncp_flow_cams_europe.py:download_cams_europe
   parameters: {}
   work_pool:
     name: test-docker-process-worker
