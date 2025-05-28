@@ -10,6 +10,7 @@ from prefect.client import get_client
 from prefect.client.schemas import StateType
 from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, \
     FlowRunFilterStateType, FlowRunFilterStateName, FlowRunFilterState
+from prefect.client.schemas.sorting import FlowRunSort
 # from prefect.server.schemas.filters import FlowRunFilterState
 from prefect.utilities.asyncutils import sync_compatible
 from prefect.variables import Variable
@@ -90,7 +91,7 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
             flow_filter=flow_name_filter,
             flow_run_filter=FlowRunFilter(state=FlowRunFilterState(name=FlowRunFilterStateName(any_=["Completed"]))),
 
-            limit=10, sort=["START_TIME_DESC"]
+            limit=10, sort=[FlowRunSort.START_TIME_DESC]
             )
         print(f"runs for flow {flow_name}: ", len(runs))
 
