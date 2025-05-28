@@ -25,7 +25,7 @@ pull:
       stream_output: true
               
 deployments:
-- name: cams-netcdf-sync
+- name: cams-europe-deployment
   version: null
   tags:
     - cams
@@ -44,7 +44,7 @@ deployments:
     cron: "0 9 * * *"  # Run daily at 9 AM UTC
     timezone: UTC
 
-- name: cams-mos-sync
+- name: cams-mos-deployment
   version: null
   tags:
     - cams
@@ -63,7 +63,7 @@ deployments:
     cron: "0 9 * * *"  # Run daily at 9 AM UTC
     timezone: UTC
 
-- name: observations-sync
+- name: observations-deployment
   version: null
   tags:
     - observations
@@ -80,7 +80,7 @@ deployments:
     cron: "*/30 * * * *"  # Run every 30 minutes
     timezone: UTC
 
-- name: station-data-sync
+- name: stations-deployment
   version: null
   tags:
     - stations
