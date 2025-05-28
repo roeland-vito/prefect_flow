@@ -88,11 +88,15 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         # Get flow runs for the flow
         runs = await client.read_flow_runs(
             flow_filter=flow_name_filter,
-            flow_run_filter=FlowRunFilter(state=FlowRunFilterState(type=FlowRunFilterStateType(any_=[StateType.COMPLETED.name]))),
+            flow_run_filter=FlowRunFilter(state=FlowRunFilterState(name=FlowRunFilterStateName(any_=["Completed"]))),
 
             limit=10, sort=["-end_time"]
             )
         print(f"runs for flow {flow_name}: ", len(runs))
+
+        for run in runs:
+            print("run: ", run.id, run.state.name, run.end_time)
+
 
         for run in runs:
             print("run: ", run.id, run.state.name, run.end_time)
