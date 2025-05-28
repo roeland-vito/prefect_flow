@@ -1,18 +1,18 @@
 import asyncio
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from types import coroutine
-from typing import Any
 
 from cams_ncp_client.client import CamsNcpApiClient
 from prefect import State
 from prefect.blocks.system import Secret
-from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, FlowRunFilterId
-from prefect.variables import Variable
-from vito.sas.air.cams_client import CAMSEuropeClient, Pollutant
 from prefect.client import get_client
+from prefect.client.schemas import StateType
+from prefect.client.schemas.filters import FlowFilterName, FlowFilter, FlowRunFilter, FlowFilterId, \
+    FlowRunFilterStateType
+from prefect.server.schemas.filters import FlowRunFilterState
 from prefect.utilities.asyncutils import sync_compatible
-from datetime import datetime, timedelta, timezone
+from prefect.variables import Variable
 
 _ncp_api_client: CamsNcpApiClient | None  = None
 
@@ -83,11 +83,17 @@ async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
         flow_id = flows[0].id
 
         print(f"flow_id: ", flow_id)
-
-        runs = await client.read_flow_runs(flow_filter=flow_name_filter)
+        # {"any_": [StateType.COMPLETED]}
+        # FlowRunFilterState(any_=[StateType.COMPLETED])
+        # Get flow runs for the flow
+        runs = await client.read_flow_runs(
+            flow_filter=flow_name_filter,
+            flow_run_filter=FlowRunFilter(state=FlowRunFilterState(type=FlowRunFilterStateType(any_=[StateType.COMPLETED]))),
+            limit=10, sort=["-end_time"])
         print(f"runs for flow {flow_name}: ", len(runs))
 
         for run in runs:
+            print("run: ", run.id, run.state.name, run.end_time)
             if run.state.name == "Completed" and run.end_time and run.end_time >= since:
                 return True
 

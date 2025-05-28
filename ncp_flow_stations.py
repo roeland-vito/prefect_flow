@@ -98,6 +98,7 @@ def _update_station_from_ircel_wfs_client(session: requests.Session, station_cli
         print("No SOS stations found from WFS client")
         return [], []
 
+
 def _update_station_from_sos_client(session: requests.Session, station_client: StationClient, quantity_names: Set[str]) -> (List[str], List[tuple]):
     sos_client = SOSClient(session=session)
     # Update station data with data from the SOS client
