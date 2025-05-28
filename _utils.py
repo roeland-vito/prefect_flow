@@ -62,49 +62,18 @@ async def assert_recent_flow_run(flow_name: str, hours: int = 8) -> None:
 @sync_compatible
 async def was_flow_successful_recently(flow_name: str, hours: int = 8) -> bool:
     async with get_client() as client:
-        now = datetime.now(timezone.utc)
-        since = now - timedelta(hours=hours)
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
-        # Get flow by name
-        # print all flow names to debug this code
-        print(f"Checking for flow: {flow_name}")
-        print("Available flows:")
-        all_flows = await client.read_flows()
-        for flow in all_flows:
-            print(f"- {flow.name} (ID: {flow.id})")
-
-        # flow for name
-        flow_name_filter = FlowFilter(name=FlowFilterName(any_=[flow_name]))
-        flows = await client.read_flows(flow_filter=flow_name_filter)
-
-        print(f"flows for name {flow_name}: ", flows)
-        if not flows:
-            return False
-
-        flow_id = flows[0].id
-
-        print(f"flow_id: ", flow_id)
-        # {"any_": [StateType.COMPLETED]}
-        # FlowRunFilterState(any_=[StateType.COMPLETED])
-        # Get flow runs for the flow
+        # Get completed flow runs for the flow
         runs = await client.read_flow_runs(
-            flow_filter=flow_name_filter,
+            flow_filter=FlowFilter(name=FlowFilterName(any_=[flow_name])),
             flow_run_filter=FlowRunFilter(state=FlowRunFilterState(name=FlowRunFilterStateName(any_=["Completed"]))),
-
             limit=10,
             sort=FlowRunSort.START_TIME_DESC
             )
-        print(f"runs for flow {flow_name}: ", len(runs))
-
         for run in runs:
-            print("run: ", run.id, run.state.name, run.end_time)
-
-
-        for run in runs:
-            print("run: ", run.id, run.state.name, run.end_time)
-            if run.state.name == "Completed" and run.end_time and run.end_time >= since:
+            if run.end_time and run.end_time >= since:
                 return True
-
         return False
 
 def ncp_api_client() -> CamsNcpApiClient:
