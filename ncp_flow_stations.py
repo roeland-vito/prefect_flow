@@ -13,7 +13,8 @@ from vito.sas.air.sos_client import Station, SOSClient
 from _utils import print_env, ncp_api_client
 
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=15))
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=10),
+      retries=2, retry_delay_seconds=300)  # retry after 5 minutes
 def update_station_data() -> None:
     # if Variable.get("debug_python_worker_env", False):
     #     print_env()

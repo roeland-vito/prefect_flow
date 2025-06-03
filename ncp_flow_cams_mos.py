@@ -19,7 +19,8 @@ from vito.sas.air.cams_client import Pollutant, CAMSMosClient
 from _utils import assert_recent_flow_run, get_secret, ncp_api_client
 
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=5))
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=5),
+      retries=6, retry_delay_seconds=900)  # Will retry up to 6 times, every 15 minutes))
 def download_cams_mos() -> None:
     assert_recent_flow_run("update-station-data")
 

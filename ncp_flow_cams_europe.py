@@ -30,7 +30,9 @@ class Extent(BaseModel):
     def as_list(self) -> List[float]:
         return [self.lat_max, self.lon_min, self.lat_min, self.lon_max]
 
-@flow(log_prints=True, task_runner=ConcurrentTaskRunner(max_workers=5))
+@flow(log_prints=True,
+      task_runner=ConcurrentTaskRunner(max_workers=5),
+      retries=6, retry_delay_seconds=900)  # Will retry up to 6 times, every 15 minutes)
 def download_cams_europe(model_names: Optional[List[str]] = None) -> None:
     """Download CAMS Europe models"""
     if model_names is None:

@@ -10,20 +10,19 @@ pull:
       repository: https://github.com/roeland-vito/prefect_flow.git
       #repository: https://git.vito.be/scm/tes/cams-ncp_flow_process.git
       branch: main
-
 #  - prefect.deployments.steps.run_shell_script:
 #      id: ls
 #      directory: "{{ clone-step.directory }}"
 #      script: ls -lisat
 #      stream_output: true
-      
+
   - vito.sas_prefect.uv_install:
       id: uv-install-step
       directory: "{{ clone-step.directory }}" # `clone-step` is a user-provided `id` field
       min_python_version: "3.10"
       sub_directory: prefect_flow-main
       stream_output: true
-              
+
 deployments:
 - name: cams-europe-deployment
   version: null
@@ -36,13 +35,30 @@ deployments:
   entrypoint: ncp_flow_cams_europe.py:download_cams_europe
   parameters: {}
   work_pool:
-    name: test-docker-process-worker
+    name: swarm-worker
     job_variables:
       # Explicitly use uv
       command: "uv run python -m prefect.engine"
   schedule:
     cron: "0 9 * * *"  # Run daily at 9 AM UTC
     timezone: UTC
+
+- name: cams-processing-deployment
+  version: null
+  tags:
+    - cams
+    - netcdf
+    - cdsapi
+  description: "Process CAMS netcdf files after download."
+  concurrency_limit: null
+  entrypoint: ncp_flow_cams_processing.py:process_cams_europe
+  parameters: {}
+  work_pool:
+    name: swarm-worker
+    job_variables:
+      # Explicitly use uv
+      command: "uv run python -m prefect.engine"
+
 
 - name: cams-mos-deployment
   version: null
@@ -55,7 +71,7 @@ deployments:
   entrypoint: ncp_flow_cams_mos.py:download_cams_mos
   parameters: {}
   work_pool:
-    name: test-docker-process-worker
+    name: swarm-worker
     job_variables:
       # Explicitly use uv
       command: "uv run python -m prefect.engine"
@@ -73,7 +89,7 @@ deployments:
   entrypoint: ncp_flow_observations.py:download_observations
   parameters: {}
   work_pool:
-    name: test-docker-process-worker
+    name: swarm-worker
     job_variables:
       command: "uv run python -m prefect.engine"
   schedule:
@@ -90,9 +106,23 @@ deployments:
   entrypoint: ncp_flow_stations.py:update_station_data
   parameters: {}
   work_pool:
-    name: test-docker-process-worker
+    name: swarm-worker
     job_variables:
       command: "uv run python -m prefect.engine"
   schedule:
-    cron: "0 */6 * * *"  # Run every 6 hours to ensure dependency is met
+    cron: "0 */6 * * *"  # Run every 6 hours
     timezone: UTC
+
+automations:
+  - name: start-processing
+    description: Start processing CAMS data when the download flow completes successfully.
+    enabled: true
+    trigger:
+      type: event
+      match:
+        prefect.resource.name: "download_cams_europe"
+      expect:
+        - "prefect.flow-run.Completed"
+    actions:
+      - type: run-deployment
+        deployment_name: "cams-processing-deployment"
