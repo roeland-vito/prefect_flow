@@ -28,9 +28,11 @@ def process_stations_cams_europe(model_names: Optional[List[str]] = None) -> Non
         print("No CAMS models specified. Exiting.")
         return
 
+    print(f"Processing Stations for CAMS models: {model_names}")
     pollutants: List[str] = Pollutant.all()
-    df_stations = ncp_api_client().station.find_stations_df()
     process_date = datetime.now()
+
+    df_stations = get_stations_df()
 
     # Submit all pollutant tasks concurrently
     task_futures = []
@@ -66,6 +68,20 @@ def process_stations_cams_europe(model_names: Optional[List[str]] = None) -> Non
             print(f"  Error for pollutant {pollutant} model: {model_name}: {error}")
 
     print(f"Processing CAMS models: {model_names}")
+
+@task(retries=3, retry_delay_seconds=30)
+def get_stations_df() -> pd.DataFrame:
+    """
+    Get the DataFrame of stations.
+    """
+    try:
+        station_client = ncp_api_client().station
+        df_stations = station_client.find_stations_df()
+        print(f"Found {len(df_stations)} stations.")
+        return df_stations
+    except Exception as e:
+        print(f"✗ Error fetching stations: {str(e)}")
+        raise
 
 
 @task(retries=3, retry_delay_seconds=30)
