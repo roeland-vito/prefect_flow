@@ -29,7 +29,7 @@ def process_stations_cams_europe(model_names: Optional[List[str]] = None) -> Non
         return
 
     pollutants: List[str] = Pollutant.all()
-    # obs_client: ObservationClient = ncp_api_client().observation
+    df_stations = ncp_api_client().station.find_stations_df()
     process_date = datetime.now()
 
     # Submit all pollutant tasks concurrently
@@ -37,7 +37,9 @@ def process_stations_cams_europe(model_names: Optional[List[str]] = None) -> Non
     for pollutant in pollutants:
         for model_name in model_names:
             print(f"Processing CAMS model {model_name} for pollutant {pollutant}")
+            # process_cams_model(df_stations: pd.DataFrame, model_name: str, pollutant:str, process_date: datetime)
             future = process_cams_model.submit(
+                df_stations=df_stations,
                 model_name=model_name,
                 pollutant=pollutant,
                 process_date=process_date)

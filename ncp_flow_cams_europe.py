@@ -72,9 +72,18 @@ def download_cams_europe(model_names: Optional[List[str]] = None) -> None:
     print("CAMS Europe download with CDS API completed :)")
 
 
-@task(retries=3, retry_delay_seconds=30)
+def should_retry(task, task_run, state):
+    """No retry for 'Invalid value for cams_europe_with' Exception."""
+    if state.type == "FAILED" and state.result():
+        exception = state.result()
+        if isinstance(exception, ValueError) and "Invalid value for cams_europe_with" in str(exception):
+            return False
+    return True
+
+
+@task(retries=8, retry_delay_seconds=900, retry_condition_fn=should_retry)  # Will retry up to 8 times, every 15 minutes)
 def download_cams_model_europe_api_for_model(model_name: str) -> str:
-    """Download CAMS Europe data for a single model"""
+    """Download CAMS Europe data for a single model using either CDS API or FTP."""
     try:
         cams_europe_with = Variable.get("cams_europe_with", default="CDS_API")  # CDS_API or FTP are allowed options
         if CAMS_EUROPE_CDS_API == cams_europe_with:
