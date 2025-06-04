@@ -17,7 +17,7 @@ from _utils import ncp_api_client
 
 
 @flow(log_prints=True,
-      task_runner=ConcurrentTaskRunner(max_workers=5),
+      task_runner=ConcurrentTaskRunner(max_workers=1),
       retries=6, retry_delay_seconds=900)  # Will retry up to 6 times, every 15 minutes)
 def process_stations_cams_europe(model_names: Optional[List[str]] = None) -> None:
     """Download CAMS Europe models"""
