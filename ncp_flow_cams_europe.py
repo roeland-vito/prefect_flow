@@ -109,7 +109,7 @@ def _download_cams_model_europe_with_ftp(model_name: str) -> str:
     ftp_root = Variable.get("cams_ftp_root", "/DATA/CAMS_EUROPE_AIR_QUALITY")
     extent = _get_cams_extent()
     for pollutant in Pollutant.all():
-        ftp_client = CAMSftpClient(pollutant=pollutant, ftp_host=ftp_host, ftp_root=ftp_root, ftp_user=get_secret("cams-ftp-user"))
+        ftp_client = CAMSftpClient(pollutant=pollutant, cams_model_name=model_name, ftp_host=ftp_host, ftp_root=ftp_root, ftp_user=get_secret("cams-ftp-user"))
         print(f"Start downloading CAMS data.  model: {model_name} pollutant: {pollutant}")
         with tempfile.TemporaryDirectory() as tmpdir:
             cams_file = ftp_client.download(tmpdir, ftp_pw=get_secret("cams-ftp-pw"))
